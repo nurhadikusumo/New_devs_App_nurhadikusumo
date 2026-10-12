@@ -19,7 +19,9 @@ async def calculate_total_revenue(property_id: str, tenant_id: str, month: int, 
         result = await session.execute(text("""
             SELECT p.id AS property_id,
                    COALESCE(SUM(r.total_amount), 0) AS total_revenue,
-                   COUNT(r.id) AS reservation_count
+                   COUNT(r.id) AS reservation_count,
+                   COUNT(DISTINCT r.currency) AS currency_count,
+                   MIN(r.currency) AS currency
             FROM properties AS p
             LEFT JOIN reservations AS r
               ON r.property_id = p.id AND r.tenant_id = p.tenant_id
@@ -33,10 +35,12 @@ async def calculate_total_revenue(property_id: str, tenant_id: str, month: int, 
 
     if row is None:
         raise HTTPException(status_code=404, detail="Property not found")
+    if row.currency_count > 1:
+        raise HTTPException(status_code=409, detail="Cannot combine revenue in different currencies")
     return {
         "property_id": property_id,
         "tenant_id": tenant_id,
         "total": str(Decimal(str(row.total_revenue))),
-        "currency": "USD",
+        "currency": row.currency or "USD",
         "count": row.reservation_count,
     }

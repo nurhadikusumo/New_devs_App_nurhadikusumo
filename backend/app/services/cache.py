@@ -12,7 +12,7 @@ redis_client = redis.Redis.from_url(os.getenv("REDIS_URL", "redis://localhost:63
 
 
 async def get_revenue_summary(property_id: str, tenant_id: str, month: int, year: int) -> dict[str, Any]:
-    cache_key = f"revenue:v3:{tenant_id}:{property_id}:{year}:{month}"
+    cache_key = f"revenue:v4:{tenant_id}:{property_id}:{year}:{month}"
     try:
         cached = await redis_client.get(cache_key)
         if cached:

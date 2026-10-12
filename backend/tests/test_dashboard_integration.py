@@ -5,8 +5,11 @@ import os
 import unittest
 import urllib.error
 import urllib.request
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
+from fastapi import HTTPException
+from app.api.v1.dashboard import get_dashboard_summary
 from app.core.database_pool import db_pool
 from app.services.reservations import calculate_total_revenue
 
@@ -18,6 +21,31 @@ class RevenueFailureTests(unittest.IsolatedAsyncioTestCase):
         ):
             with self.assertRaisesRegex(RuntimeError, "database unavailable"):
                 await calculate_total_revenue("prop-001", "tenant-a", 3, 2024)
+
+    async def test_half_cent_rounds_after_aggregation(self):
+        revenue = {"property_id": "prop-001", "total": "1.005", "currency": "USD", "count": 1}
+        with patch("app.api.v1.dashboard.get_revenue_summary", new_callable=AsyncMock, return_value=revenue):
+            result = await get_dashboard_summary("prop-001", 3, 2024, SimpleNamespace(tenant_id="tenant-a"))
+        self.assertEqual("1.01", result["total_revenue"])
+
+    async def test_mixed_currencies_are_rejected(self):
+        row = SimpleNamespace(total_revenue="3.000", reservation_count=2, currency_count=2, currency="EUR")
+
+        class FakeSession:
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *args):
+                pass
+
+            async def execute(self, *args):
+                return SimpleNamespace(fetchone=lambda: row)
+
+        fake_pool = SimpleNamespace(session_factory=True, get_session=FakeSession)
+        with patch("app.services.reservations.db_pool", fake_pool):
+            with self.assertRaises(HTTPException) as failure:
+                await calculate_total_revenue("prop-001", "tenant-a", 3, 2024)
+        self.assertEqual(409, failure.exception.status_code)
 
 
 @unittest.skipUnless(os.getenv("RUN_DASHBOARD_INTEGRATION") == "1", "Requires running docker-compose services")
