@@ -11,10 +11,15 @@ from unittest.mock import AsyncMock, patch
 from fastapi import HTTPException
 from app.api.v1.dashboard import get_dashboard_summary
 from app.core.database_pool import db_pool
+from app.core.tenant_resolver import TenantResolver
 from app.services.reservations import calculate_total_revenue
 
 
 class RevenueFailureTests(unittest.IsolatedAsyncioTestCase):
+    async def test_unknown_user_has_no_default_tenant(self):
+        tenant_id = await TenantResolver.resolve_tenant_id("unknown-user", "unknown@example.com")
+        self.assertIsNone(tenant_id)
+
     async def test_database_failure_does_not_return_mock_revenue(self):
         with patch.object(db_pool, "session_factory", None), patch.object(
             db_pool, "initialize", new_callable=AsyncMock, side_effect=RuntimeError("database unavailable")
