@@ -68,7 +68,7 @@ const Dashboard: React.FC = () => {
 
           <div className="space-y-6">
             {error && <p className="text-red-600">{error}</p>}
-            {!error && selectedProperty && <RevenueSummary propertyId={selectedProperty} month={month} year={year} />}
+            {!error && selectedProperty && <RevenueSummary key={`${selectedProperty}:${year}:${month}`} propertyId={selectedProperty} month={month} year={year} />}
           </div>
         </div>
       </div>
