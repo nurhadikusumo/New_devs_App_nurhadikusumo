@@ -11,6 +11,8 @@ const PROPERTIES = [
 
 const Dashboard: React.FC = () => {
   const [selectedProperty, setSelectedProperty] = useState('prop-001');
+  const [month, setMonth] = useState(3);
+  const [year, setYear] = useState(2024);
 
   return (
     <div className="p-4 lg:p-6 min-h-full">
@@ -41,12 +43,18 @@ const Dashboard: React.FC = () => {
                     </option>
                   ))}
                 </select>
+                <div className="flex gap-2 mt-2">
+                  <select aria-label="Month" value={month} onChange={(event) => setMonth(Number(event.target.value))} className="border rounded-md p-2 text-sm">
+                    {Array.from({ length: 12 }, (_, index) => <option key={index + 1} value={index + 1}>{new Date(2024, index).toLocaleString('en', { month: 'long' })}</option>)}
+                  </select>
+                  <input aria-label="Year" type="number" min="1" max="9998" value={year} onChange={(event) => setYear(Number(event.target.value))} className="border rounded-md p-2 text-sm w-24" />
+                </div>
               </div>
             </div>
           </div>
 
           <div className="space-y-6">
-            <RevenueSummary propertyId={selectedProperty} />
+            <RevenueSummary propertyId={selectedProperty} month={month} year={year} />
           </div>
         </div>
       </div>
