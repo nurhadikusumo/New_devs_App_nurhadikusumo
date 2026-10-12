@@ -147,27 +147,28 @@ class LocalAuthClient {
   async getSession(): Promise<{ data: { session: AuthSession | null } }> {
     // Check if current session is still valid
     if (this.session?.access_token) {
+      const token = this.session.access_token;
       try {
         // Verify token is still valid by calling a protected endpoint
         const response = await fetch(`${this.getApiUrl()}/api/v1/auth/me`, {
           headers: {
-            'Authorization': `Bearer ${this.session.access_token}`,
+            'Authorization': `Bearer ${token}`,
           },
         });
 
         if (response.ok) {
           return { data: { session: this.session } };
-        } else {
-          // Session invalid, clear it
+        }
+        if ((response.status === 401 || response.status === 403) && this.session?.access_token === token) {
+          // Only an explicit authentication failure invalidates this session.
           this.saveSession(null);
         }
       } catch (error) {
         console.warn('[LocalAuth] Session validation failed:', error);
-        this.saveSession(null);
       }
     }
 
-    return { data: { session: null } };
+    return { data: { session: this.session } };
   }
 
   async getUser(token?: string): Promise<{ user: AuthUser | null }> {

@@ -106,7 +106,8 @@ class LocalStorageManager {
         'selectedCity',
         'user_permissions',
         'tenant_id',
-        'organization_id'
+        'organization_id',
+        'base360-auth-token'
       ];
       
       const preservedData: Record<string, string> = {};
@@ -247,6 +248,12 @@ class LocalStorageManager {
       }
     }
     
+    // Keep the local authentication session during first-time migration.
+    const authSession = localStorage.getItem('base360-auth-token');
+    if (authSession) {
+      preservedData['base360-auth-token'] = authSession;
+    }
+
     // Also preserve version key
     const versionValue = localStorage.getItem(STORAGE_VERSION_KEY);
     if (versionValue) {
